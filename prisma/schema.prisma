@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  INCOMPLETE
+}
+
+enum PlanPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum PlanStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  PIX
+  BOLETO
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  status         UserStatus @default(ACTIVE)
+  roleId         Int
+  createdAt      DateTime @db.Timestamptz(6) @default(now())
+  updatedAt      DateTime? @db.Timestamptz(6) @updatedAt
+  lastLoginAt    DateTime? @db.Timestamptz(6)
+
+  refreshTokens  RefreshToken[]
+  subscriptions  Subscription[]
+  payments       Payment[]
+
+  role          Role @relation(fields: [roleId], references: [id])
+  @@index([roleId])
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         Int @id @default(autoincrement())
+  userId     Int
+  tokenHash  String
+  revoked    Boolean @default(false)
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @db.Timestamptz(6) @default(now())
+
+  user       User @relation(fields: [userId], references: [id])
+  @@index([userId])
+
+  @@map("refresh_tokens")
+}
+
+model Subscription {
+  id                    Int @id @default(autoincrement())
+  userId                Int
+  planId                Int
+  status                SubscriptionStatus @default(ACTIVE)
+  stripeSubscriptionId  String @unique
+  currentPeriodStart    DateTime @db.Timestamptz(6)
+  currentPeriodEnd      DateTime @db.Timestamptz(6)
+  createdAt             DateTime @db.Timestamptz(6) @default(now())
+
+  payments              Payment[]
+
+  user                  User @relation(fields: [userId], references: [id])
+  plan                  Plan @relation(fields: [planId], references: [id])
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+
+  @@map("subscriptions")
+}
+
+model Plan {
+  id             Int @id @default(autoincrement())
+  productName    String
+  price          Decimal @db.Decimal(10, 2)
+  period         PlanPeriod
+  status         PlanStatus @default(ACTIVE)
+  stripePriceId  String @unique
+  createdAt      DateTime @db.Timestamptz(6) @default(now())
+  updatedAt      DateTime? @db.Timestamptz(6) @updatedAt
+
+  subscriptions  Subscription[]
+
+  @@map("plans")
+}
+
+model Payment {
+  id               Int @id @default(autoincrement())
+  userId           Int
+  subscriptionId   Int
+  amount           Decimal @db.Decimal(10, 2)
+  status           PaymentStatus @default(PENDING)
+  paymentMethod    PaymentMethod
+  stripePaymentId  String @unique
+  paidAt           DateTime? @db.Timestamptz(6)
+  createdAt        DateTime @db.Timestamptz(6) @default(now())
+  updatedAt        DateTime? @db.Timestamptz(6) @updatedAt
+
+  user             User @relation(fields: [userId], references: [id])
+  subscription     Subscription @relation(fields: [subscriptionId], references: [id])
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([status])
+
+  @@map("payments")
+}
+
+model Role {
+  id    Int @id @default(autoincrement())
+  name  String @unique
+
+  users User[]
+
+  @@map("roles")
+}
+
+model Event{
+  id         Int @id @default(autoincrement())
+  type       String
+  source     String
+  payload    Json
+  createdAt  DateTime @db.Timestamptz(6) @default(now())
+
+  @@map("events")
+}
