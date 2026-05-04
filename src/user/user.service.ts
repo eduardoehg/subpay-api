@@ -1,9 +1,9 @@
 import {
   ConflictException,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateUserDto } from './dto/create.user.dto/create.user.dto';
 
 @Injectable()
 export class UserService {
@@ -21,7 +21,10 @@ export class UserService {
     }
 
     const user = await this.prismaService.user.create({
-      data: dto,
+      data: {
+        ...dto,
+        roleId: 1,
+      },
       select: {
         id: true,
         email: true,
