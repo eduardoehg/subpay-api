@@ -56,4 +56,21 @@ export class UserService {
 
     return user;
   }
+
+  async getUsers(page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const users = await this.prismaService.user.findMany({
+      skip,
+      select: {
+        name: true,
+        email: true,
+        roleId: true,
+        status: true,
+      },
+      take: limit,
+    });
+
+    return users;
+  }
 }

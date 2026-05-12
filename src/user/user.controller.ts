@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
 
@@ -11,7 +11,12 @@ export class UserController {
   }
 
   @Get('get-user/:email')
-  async get(@Param('email') email: string) {
+  async getUser(@Param('email') email: string) {
     return this.service.getUser(email);
+  }
+
+  @Get('users')
+  async getUsers(@Query('page') page = 1, @Query('limit') limit = 10) {
+    return this.service.getUsers(+page, +limit);
   }
 }
