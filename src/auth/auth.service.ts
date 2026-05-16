@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -14,7 +15,7 @@ export class AuthService {
       select: {
         name: true,
         email: true,
-        password: true,
+        password: true
       },
     });
 
@@ -22,10 +23,12 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.password === dto.password) {
-      return 'Login susseful';
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+
+    if (!isPasswordValid) {
+      throw new NotFoundException('User not found');
     }
 
-    throw new NotFoundException('User not found');
+    return 'Login successful';
   }
 }

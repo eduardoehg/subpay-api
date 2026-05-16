@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import {
   ConflictException,
   Injectable,
@@ -22,10 +23,13 @@ export class UserService {
       throw new ConflictException('User already exists');
     }
 
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
     const user = await this.prismaService.user.create({
       data: {
         ...dto,
         roleId: 1,
+        password: hashedPassword,
       },
       select: {
         id: true,
@@ -84,6 +88,11 @@ export class UserService {
 
     if (!userAlreadyExists) {
       throw new NotFoundException('User not found');
+    }
+
+    if (dto.password) {
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+      dto.password = hashedPassword;
     }
 
     const user = await this.prismaService.user.update({
