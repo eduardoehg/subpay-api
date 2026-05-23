@@ -2,7 +2,6 @@ import * as bcrypt from 'bcrypt';
 import {
   ConflictException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -45,9 +44,36 @@ export class AuthService {
       email: user.email,
     };
 
+    const access_token = await this.jwtService.signAsync(payload);
+
+    const refresh_token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '15d',
+    });
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: access_token,
+      refresh_token: refresh_token,
     };
+  }
+
+  async refresh(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+
+      const newPayload = {
+        sub: payload.sub,
+        email: payload.email,
+      };
+
+      const accessToken = await this.jwtService.signAsync(newPayload);
+
+      return accessToken;
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async register(dto: RegisterDto) {
@@ -83,4 +109,6 @@ export class AuthService {
       access_token: await this.jwtService.signAsync(payload),
     };
   }
+
+  async logout() {}
 }
