@@ -22,4 +22,9 @@ export class AuthController {
   async refresh(@Body() dto: RefreshDto) {
     return this.service.refresh(dto.refreshToken);
   }
+
+  @Post('logout')
+  async logout(@Body('userId') userId: number) {
+    return this.service.logout(userId);
+  }
 }
